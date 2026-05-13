@@ -46,7 +46,7 @@ const statusClass = (status) =>
 
 const displayAssetId = (item) => item?.asset_uid || item?.barcode || `ASSET-${item?.id}`;
 
-function LoginScreen({ loginForm, setLoginForm, handleLogin, loading, error }) {
+function LoginScreen({ loginForm, setLoginForm, handleLogin, loading, error, rememberMe, setRememberMe }) {
   return (
     <div className="login-shell">
       <header className="login-brand">
@@ -80,6 +80,11 @@ function LoginScreen({ loginForm, setLoginForm, handleLogin, loading, error }) {
           onKeyDown={(e) => e.key === "Enter" && handleLogin()}
           placeholder="••••••••••••"
         />
+
+        <label className="remember-checkbox">
+          <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+          <span>Remember me on this device</span>
+        </label>
 
         {error && <div className="inline-alert danger">{error}</div>}
 
@@ -465,6 +470,7 @@ function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [search, setSearch] = useState("");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [rememberMe, setRememberMe] = useState(false);
   const [filters, setFilters] = useState({ category: "All", branch: "All", priority: "All", location: "All" });
   const [checkoutItem, setCheckoutItem] = useState(null);
   const [restockItem, setRestockItem] = useState(null);
@@ -490,6 +496,20 @@ function App() {
     sector: "Sector 7G",
     image_url: "",
   });
+
+  // Load saved credentials from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("aegis_login");
+    if (saved) {
+      try {
+        const { email, password } = JSON.parse(saved);
+        setLoginForm({ email, password });
+        setRememberMe(true);
+      } catch (e) {
+        console.error("Failed to load saved credentials", e);
+      }
+    }
+  }, []);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
@@ -517,6 +537,14 @@ function App() {
       setLoadError("Invalid credentials or database users have not loaded yet.");
       return;
     }
+    
+    // Save credentials if remember me is checked
+    if (rememberMe) {
+      localStorage.setItem("aegis_login", JSON.stringify({ email: loginForm.email, password: loginForm.password }));
+    } else {
+      localStorage.removeItem("aegis_login");
+    }
+    
     setUser(found);
     setActiveTab(found.role === "vendor" ? "orders" : "dashboard");
     setLoadError("");
@@ -764,7 +792,7 @@ function App() {
   const lowCount = data.items.filter((i) => stockPct(i) <= (i.priority === "Critical" ? 30 : 20)).length;
 
   if (!user) {
-    return <LoginScreen loginForm={loginForm} setLoginForm={setLoginForm} handleLogin={handleLogin} loading={loading} error={loadError} />;
+    return <LoginScreen loginForm={loginForm} setLoginForm={setLoginForm} handleLogin={handleLogin} loading={loading} error={loadError} rememberMe={rememberMe} setRememberMe={setRememberMe} />;
   }
 
   return (
