@@ -28,7 +28,7 @@ export const FOOD_IMAGES = {
   "MRE": "https://images.unsplash.com/photo-1585478259715-1c195ae2b568?w=200&h=150&fit=crop",
   "Drinking Water": "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200&h=150&fit=crop",
   "Rice": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&h=150&fit=crop",
-  "Wheat Flour": "https://images.unsplash.com/photo-1574323347407-f5e1ad6962a3?w=200&h=150&fit=crop",
+  "Wheat Flour": "https://images.unsplash.com/photo-1537145733442-c1ccf736cb60?w=200&h=150&fit=crop",
   "Canned Vegetables": "https://images.unsplash.com/photo-1584557748280-6ec02a5e8f49?w=200&h=150&fit=crop",
   "Canned Meat": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&h=150&fit=crop",
   "Cooking Oil": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=200&h=150&fit=crop",
