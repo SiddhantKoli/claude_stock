@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: military-food-inventory
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm install -g serve && serve -s build -l 3000
+    envVars:
+      - key: NODE_ENV
+        value: production
