@@ -46,7 +46,7 @@ const statusClass = (status) =>
 
 const displayAssetId = (item) => item?.asset_uid || item?.barcode || `ASSET-${item?.id}`;
 
-function LoginScreen({ loginForm, setLoginForm, handleLogin, loading, error, rememberMe, setRememberMe }) {
+function LoginScreen({ loginForm, setLoginForm, handleLogin, loading, error, rememberMe, setRememberMe, availableUsers }) {
   return (
     <div className="login-shell">
       <header className="login-brand">
@@ -59,45 +59,45 @@ function LoginScreen({ loginForm, setLoginForm, handleLogin, loading, error, rem
         <div className="top-rule" />
         <div className="section-heading">
           <h2>Secure Access Portal</h2>
-          <p>Identity verification required for command access.</p>
+          <p>Select your credentials to proceed</p>
         </div>
 
-        <label className="field-label"><span className="material-symbols-outlined">badge</span> SERVICE ID</label>
-        <input
+        <label className="field-label"><span className="material-symbols-outlined">person</span> SELECT OPERATOR</label>
+        <select
           className="field"
           value={loginForm.email}
-          onChange={(e) => setLoginForm((p) => ({ ...p, email: e.target.value }))}
-          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-          placeholder="admin@mil.gov.in"
-        />
-
-        <label className="field-label"><span className="material-symbols-outlined">lock</span> ACCESS PASSWORD</label>
-        <input
-          className="field"
-          type="password"
-          value={loginForm.password}
-          onChange={(e) => setLoginForm((p) => ({ ...p, password: e.target.value }))}
-          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-          placeholder="••••••••••••"
-        />
+          onChange={(e) => {
+            const user = availableUsers.find(u => u.email === e.target.value);
+            if (user) {
+              setLoginForm({ email: user.email, password: user.password });
+            }
+          }}
+        >
+          <option value="">-- Select a credential set --</option>
+          {availableUsers.map((user) => (
+            <option key={user.email} value={user.email}>
+              {user.name || user.email} ({user.role?.toUpperCase()})
+            </option>
+          ))}
+        </select>
 
         <label className="remember-checkbox">
           <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-          <span>Remember me on this device</span>
+          <span>Remember this selection</span>
         </label>
 
         {error && <div className="inline-alert danger">{error}</div>}
 
-        <button className="primary-action" onClick={handleLogin} disabled={loading}>
+        <button className="primary-action" onClick={handleLogin} disabled={loading || !loginForm.email}>
           <span className="material-symbols-outlined">login</span>
           {loading ? "SYNCING DATABASE" : "AUTHENTICATE & ENTER"}
         </button>
 
         <div className="credential-block">
-          <span>DEMO CREDENTIALS</span>
-          <p>Admin: admin@mil.gov.in / admin123</p>
-          <p>Officer: officer@mil.gov.in / officer123</p>
-          <p>Vendor: vendor1@supremefoods.mil / vendor123</p>
+          <span>AVAILABLE ROLES</span>
+          <p><span className="role-badge admin">ADMIN</span> Full system access & inventory control</p>
+          <p><span className="role-badge officer">OFFICER</span> Operational deployment & logistics</p>
+          <p><span className="role-badge vendor">VENDOR</span> Order fulfillment & tracking</p>
         </div>
       </main>
 
@@ -792,7 +792,7 @@ function App() {
   const lowCount = data.items.filter((i) => stockPct(i) <= (i.priority === "Critical" ? 30 : 20)).length;
 
   if (!user) {
-    return <LoginScreen loginForm={loginForm} setLoginForm={setLoginForm} handleLogin={handleLogin} loading={loading} error={loadError} rememberMe={rememberMe} setRememberMe={setRememberMe} />;
+    return <LoginScreen loginForm={loginForm} setLoginForm={setLoginForm} handleLogin={handleLogin} loading={loading} error={loadError} rememberMe={rememberMe} setRememberMe={setRememberMe} availableUsers={data.users} />;
   }
 
   return (
