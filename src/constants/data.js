@@ -33,7 +33,7 @@ export const FOOD_IMAGES = {
   "Canned Meat": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&h=150&fit=crop",
   "Cooking Oil": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=200&h=150&fit=crop",
   "Sugar": "https://images.unsplash.com/photo-1587486913049-53fc88980cfc?w=200&h=150&fit=crop",
-  "Salt": "https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?w=200&h=150&fit=crop",
+  "Salt": "/images/salt.png",
   "Tea Coffee": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&h=150&fit=crop",
   "Dal": "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=200&h=150&fit=crop",
   "Biscuits": "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200&h=150&fit=crop",
