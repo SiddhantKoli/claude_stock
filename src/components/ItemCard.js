@@ -22,11 +22,13 @@ export const ItemCard = ({ item, vendors, locations, onCheckout, onRestock, role
     }}>
       <div style={{ position: "relative", height: 140, overflow: "hidden" }}>
         <img
-          src={FOOD_IMAGES[item.name] || `https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=200&h=150&fit=crop`}
+          src={FOOD_IMAGES[item.name] || "/images/food-fallback.svg"}
           alt={item.name}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
           onError={e => {
-            e.target.src = "https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=200&h=150&fit=crop";
+            if (!e.target.src.includes("/images/food-fallback.svg")) {
+              e.target.src = "/images/food-fallback.svg";
+            }
           }}
         />
         <div style={{ position: "absolute", top: 8, left: 8 }}>

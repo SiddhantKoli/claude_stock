@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f8e7b7" />
+      <stop offset="100%" stop-color="#d2b473" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" fill="url(#g)" />
+  <rect x="80" y="80" width="480" height="320" rx="30" ry="30" fill="#fff" opacity="0.9" />
+  <path d="M220 180 C220 140 420 140 420 180 C420 220 220 220 220 180 Z" fill="#d4b16a" />
+  <path d="M240 200 C240 190 400 190 400 200 C400 210 240 210 240 200 Z" fill="#f9e5b7" />
+  <text x="320" y="340" font-family="Arial, Helvetica, sans-serif" font-size="42" fill="#5c3b08" text-anchor="middle">Wheat Flour</text>
+  <text x="320" y="385" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#5c3b08" text-anchor="middle">Canned Dry Goods</text>
+</svg>
