@@ -25,21 +25,21 @@ export const USERS = [
 ];
 
 export const FOOD_IMAGES = {
-  "MRE": "https://images.unsplash.com/photo-1599599810694-b5ac4dd64b61?w=200&h=150&fit=crop",
-  "Drinking Water": "https://images.unsplash.com/photo-1608270861620-7c40b1ce4c60?w=200&h=150&fit=crop",
-  "Rice": "https://images.unsplash.com/photo-1609137144813-57f83b65a202?w=200&h=150&fit=crop",
-  "Wheat Flour": "https://images.unsplash.com/photo-1625246333195-78d9c38ad576?w=200&h=150&fit=crop",
-  "Canned Vegetables": "https://images.unsplash.com/photo-1599599810346-c9f983aa4d4f?w=200&h=150&fit=crop",
-  "Canned Meat": "https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=200&h=150&fit=crop",
-  "Cooking Oil": "https://images.unsplash.com/photo-1596040690318-4aa236b14b1b?w=200&h=150&fit=crop",
-  "Sugar": "https://images.unsplash.com/photo-1599599810737-24a4a11af033?w=200&h=150&fit=crop",
-  "Salt": "https://images.unsplash.com/photo-1599599810974-e75d127b4fa6?w=200&h=150&fit=crop",
-  "Tea Coffee": "https://images.unsplash.com/photo-1599599810620-23de3a7ffcfb?w=200&h=150&fit=crop",
-  "Dal": "https://images.unsplash.com/photo-1603209409003-9a8e3af88bb5?w=200&h=150&fit=crop",
-  "Biscuits": "https://images.unsplash.com/photo-1599599810444-e55db0e5e02f?w=200&h=150&fit=crop",
-  "Milk Powder": "https://images.unsplash.com/photo-1600788148184-d0a2b5014e6f?w=200&h=150&fit=crop",
-  "Frozen Chicken": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=150&fit=crop",
-  "Bread": "https://images.unsplash.com/photo-1599599810260-cd2623e09d87?w=200&h=150&fit=crop",
+  "MRE": "https://images.unsplash.com/photo-1585238341710-4abb7fcc36f8?w=200&h=150&fit=crop",
+  "Drinking Water": "https://images.unsplash.com/photo-1554866585-cd94860144a7?w=200&h=150&fit=crop",
+  "Rice": "https://images.unsplash.com/photo-1612528443702-f6741f70a049?w=200&h=150&fit=crop",
+  "Wheat Flour": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&h=150&fit=crop",
+  "Canned Vegetables": "https://images.unsplash.com/photo-1599599810747-9a23c0e00c7f?w=200&h=150&fit=crop",
+  "Canned Meat": "https://images.unsplash.com/photo-1585238341506-b37e02d50b9e?w=200&h=150&fit=crop",
+  "Cooking Oil": "https://images.unsplash.com/photo-1586985289688-cacf913ecc81?w=200&h=150&fit=crop",
+  "Sugar": "https://images.unsplash.com/photo-1599599810285-e1c5ced70b09?w=200&h=150&fit=crop",
+  "Salt": "https://images.unsplash.com/photo-1599599810365-ad8e36f3b76f?w=200&h=150&fit=crop",
+  "Tea Coffee": "https://images.unsplash.com/photo-1559056199-641a0ac8b3f4?w=200&h=150&fit=crop",
+  "Dal": "https://images.unsplash.com/photo-1585238341710-4abb7fcc36f8?w=200&h=150&fit=crop",
+  "Biscuits": "https://images.unsplash.com/photo-1599599810920-8ae3f9fcd46e?w=200&h=150&fit=crop",
+  "Milk Powder": "https://images.unsplash.com/photo-1599599811012-e5eca5e1f2f1?w=200&h=150&fit=crop",
+  "Frozen Chicken": "https://images.unsplash.com/photo-1599599810746-e2cbf78cd9e4?w=200&h=150&fit=crop",
+  "Bread": "https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=200&h=150&fit=crop",
 };
 
 export const generateItems = () => [
