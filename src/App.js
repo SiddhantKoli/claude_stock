@@ -253,14 +253,6 @@ function Dashboard({ items, orders, vendors, onManualOrder, onDeliveryConfirm })
           />
         </section>
 
-        <section className="panel span-4">
-          <div className="map-card">
-            <img alt="" src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=700&h=700&fit=crop" />
-            <div><span className="pulse" />LIVE ASSET TRACKING</div>
-            <footer><span>COORD: 28.61N 77.20E</span><span>SAT-LINK: ACTIVE</span></footer>
-          </div>
-        </section>
-
         <section className="panel span-12">
           <div className="panel-head"><h2>LOGISTICS TIMELINE</h2></div>
           <div className="timeline">

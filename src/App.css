@@ -145,11 +145,7 @@ tbody tr:nth-child(even) { background: var(--panel-low); }
 .status-chip.ok { border-color: var(--ok); color: var(--ok); background: rgba(16,185,129,.12); }
 .status-chip.info, .status-chip.muted { border-color: var(--primary); color: var(--primary); background: rgba(190,198,224,.12); }
 .table-action { border: 1px solid var(--border); background: rgba(69,70,77,.35); color: var(--text); padding: 7px 10px; font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
-.map-card { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--field); }
-.map-card img { width: 100%; height: 100%; object-fit: cover; opacity: .55; filter: grayscale(.5); }
-.map-card div { position: absolute; top: 16px; left: 16px; border: 1px solid var(--border); background: var(--panel-high); padding: 6px 8px; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
 .pulse, .sync-strip i { width: 7px; height: 7px; background: var(--ok); display: inline-block; animation: pulse 1.4s infinite; }
-.map-card footer { position: absolute; inset: auto 16px 16px; display: flex; justify-content: space-between; gap: 12px; color: var(--text); font-size: 10px; font-weight: 800; }
 .timeline { display: grid; gap: 18px; }
 .timeline-row { position: relative; border-left: 1px solid var(--border); padding-left: 24px; display: grid; grid-template-columns: 120px 1fr auto; gap: 16px; align-items: center; }
 .timeline-row::before { content: ""; position: absolute; left: -5px; top: 8px; width: 9px; height: 9px; background: var(--primary); }
