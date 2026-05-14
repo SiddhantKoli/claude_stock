@@ -8,6 +8,7 @@ import {
   loadInventoryData,
   updateFoodItem,
   updateOrder,
+  deleteFoodItem,
 } from "./services/inventoryApi";
 import { stockPct, daysUntilExpiry, fmt } from "./utils/helpers";
 
@@ -274,7 +275,7 @@ function Dashboard({ items, orders, vendors, onManualOrder, onDeliveryConfirm })
   );
 }
 
-function Inventory({ items, locations, vendors, user, filters, setFilters, onCheckout, onRestock, onAddItem }) {
+function Inventory({ items, locations, vendors, user, filters, setFilters, onCheckout, onRestock, onDelete, onAddItem }) {
   const branchOptions = ["All", ...new Set(items.map((i) => i.branch))];
 
   return (
@@ -327,6 +328,7 @@ function Inventory({ items, locations, vendors, user, filters, setFilters, onChe
                 <div className="asset-actions">
                   <button onClick={() => onRestock(item)}>RESTOCK</button>
                   <button onClick={() => onCheckout(item)}>CHECKOUT</button>
+                  {user.role === "admin" && <button className="danger-action" onClick={() => onDelete(item)}>DELETE</button>}
                 </div>
               )}
             </article>
@@ -768,6 +770,28 @@ function App() {
     }
   };
 
+  const handleDeleteItem = async (item) => {
+    if (!window.confirm(`Are you sure you want to delete "${item.name}"? This action cannot be undone.`)) return;
+    setBusy(true);
+    try {
+      await addAudit({
+        food_item_id: item.id,
+        action: "Deleted",
+        qty: item.current_stock,
+        by: user.name,
+        notes: "Asset permanently removed from inventory.",
+        ts: new Date().toISOString(),
+      });
+      await deleteFoodItem(item.id);
+      setData((p) => ({ ...p, items: p.items.filter((i) => i.id !== item.id) }));
+      showToast(`${item.name} has been deleted from the inventory.`);
+    } catch (error) {
+      showToast(error.message || "Unable to delete asset.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const filteredItems = useMemo(() => {
     const text = search.trim().toLowerCase();
     return data.items.filter((item) => {
@@ -796,7 +820,7 @@ function App() {
           {loading && <div className="inline-alert">Synchronizing Supabase live data...</div>}
           {loadError && <div className="inline-alert danger">{loadError}</div>}
           {activeTab === "dashboard" && <Dashboard items={data.items} orders={data.orders} vendors={data.vendors} onManualOrder={handleManualOrder} onDeliveryConfirm={handleDeliveryConfirm} />}
-          {activeTab === "inventory" && <Inventory items={filteredItems} locations={data.locations} vendors={data.vendors} user={user} filters={filters} setFilters={setFilters} onCheckout={setCheckoutItem} onRestock={setRestockItem} onAddItem={() => setAddItemOpen(true)} />}
+          {activeTab === "inventory" && <Inventory items={filteredItems} locations={data.locations} vendors={data.vendors} user={user} filters={filters} setFilters={setFilters} onCheckout={setCheckoutItem} onRestock={setRestockItem} onDelete={handleDeleteItem} onAddItem={() => setAddItemOpen(true)} />}
           {activeTab === "orders" && <Orders orders={data.orders} items={data.items} vendors={data.vendors} user={user} onDeliveryConfirm={handleDeliveryConfirm} onVendorConfirm={handleVendorConfirm} />}
           {activeTab === "audit" && <Audit audit={data.audit} logs={data.logs} items={data.items} />}
         </section>
