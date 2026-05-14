@@ -303,7 +303,7 @@ function Inventory({ items, locations, vendors, user, filters, setFilters, onChe
           <option value="All">All Locations</option>
           {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select>
-        {user.role === "admin" && <button className="primary-small" onClick={onAddItem}><span className="material-symbols-outlined">add</span>ADD ASSET</button>}
+        {(user.role === "admin" || user.role === "officer") && <button className="primary-small" onClick={onAddItem}><span className="material-symbols-outlined">add</span>ADD ASSET</button>}
       </div>
 
       <div className="asset-grid">
@@ -795,7 +795,6 @@ function App() {
   const filteredItems = useMemo(() => {
     const text = search.trim().toLowerCase();
     return data.items.filter((item) => {
-      if (user?.role === "officer" && item.location_id !== user.location_id) return false;
       if (filters.category !== "All" && item.category !== filters.category) return false;
       if (filters.branch !== "All" && item.branch !== filters.branch) return false;
       if (filters.priority !== "All" && item.priority !== filters.priority) return false;
