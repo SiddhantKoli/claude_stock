@@ -25,7 +25,7 @@ export const USERS = [
 ];
 
 export const FOOD_IMAGES = {
-  "MRE": "https://images.unsplash.com/photo-1585478259715-1c195ae2b568?w=200&h=150&fit=crop",
+  "MRE": "https://www.pngkey.com/png/detail/934-9342670_fallout-wiki-fnv-mre.png",
   "Drinking Water": "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200&h=150&fit=crop",
   "Rice": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&h=150&fit=crop",
   "Wheat Flour": "/images/wheat-flour.svg",
