@@ -229,3 +229,44 @@ tbody tr:nth-child(even) { background: var(--panel-low); }
   .timeline-row { grid-template-columns: 1fr; }
   th, td { padding: 10px; }
 }
+
+/* ── Email Alert Log ── */
+.nav-badge { min-width: 18px; height: 18px; background: var(--danger); color: #300; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; margin-left: auto; padding: 0 4px; }
+
+.email-config-banner { display: flex; align-items: flex-start; gap: 14px; padding: 16px; }
+.email-config-banner .material-symbols-outlined { flex-shrink: 0; color: var(--warn); font-size: 22px; }
+.email-config-banner strong { display: block; color: var(--warn); margin-bottom: 4px; }
+.email-config-banner p { margin: 0; color: var(--muted); font-size: 13px; }
+.link-btn { background: none; border: none; color: var(--primary); text-decoration: underline; padding: 0; font-size: 13px; cursor: pointer; }
+.link-btn:hover { color: var(--text); }
+.inline-alert.warn { border-color: var(--warn); color: var(--warn); background: rgba(245,158,11,.1); }
+
+.empty-email-log { text-align: center; padding: 60px 24px; color: var(--dim); }
+.empty-email-log .material-symbols-outlined { font-size: 56px; display: block; margin-bottom: 16px; opacity: 0.4; }
+.empty-email-log p { max-width: 380px; margin: 0 auto; line-height: 1.6; font-size: 14px; }
+
+.email-log-list { display: flex; flex-direction: column; gap: 1px; }
+.email-log-entry { padding: 20px 24px; border-bottom: 1px solid var(--border); background: var(--panel); transition: background 0.2s; }
+.email-log-entry:hover { background: var(--panel-high); }
+.email-log-entry.sent { border-left: 3px solid var(--ok); }
+.email-log-entry.simulated { border-left: 3px solid var(--primary); }
+.email-log-entry.failed { border-left: 3px solid var(--danger); }
+
+.email-log-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.email-type-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.email-type-badge.auto { background: rgba(255,180,171,.15); color: var(--danger); border: 1px solid rgba(255,180,171,.3); }
+.email-type-badge.manual { background: rgba(190,198,224,.15); color: var(--primary); border: 1px solid rgba(190,198,224,.3); }
+
+.email-log-subject { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.4; }
+.email-log-meta { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; }
+.email-log-meta span { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.email-log-body { font-size: 12px; color: var(--dim); background: var(--field); border: 1px solid var(--border); padding: 10px 14px; border-radius: 4px; line-height: 1.5; }
+
+/* ── Email Settings Modal ── */
+.email-settings-info { display: flex; gap: 12px; align-items: flex-start; background: rgba(190,198,224,.07); border: 1px solid var(--border-soft); padding: 14px; border-radius: 4px; margin-bottom: 8px; }
+.email-settings-info .material-symbols-outlined { color: var(--primary); flex-shrink: 0; }
+.email-settings-info p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.email-settings-info a { color: var(--primary); }
+.email-template-hint { margin-top: 16px; padding: 14px; background: var(--field); border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
+.email-template-hint strong { display: block; color: var(--muted); margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.email-template-hint code { display: block; color: var(--primary); font-family: "JetBrains Mono", monospace; font-size: 11px; line-height: 1.7; word-break: break-all; }

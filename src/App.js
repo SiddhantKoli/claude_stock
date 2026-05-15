@@ -10,6 +10,18 @@ import {
   updateOrder,
 } from "./services/inventoryApi";
 import { stockPct, daysUntilExpiry, fmt } from "./utils/helpers";
+import {
+  loadEmailConfig,
+  saveEmailConfig,
+  sendLowStockAlert,
+  sendManualOrderEmail,
+  sendAutoReorderEmail,
+} from "./services/emailService";
+import {
+  attemptAutoReorder,
+  processLowStockDetection,
+} from "./services/reorderService";
+import { createLowStockScheduler } from "./services/lowStockScheduler";
 
 const CATEGORIES = [
   "All",
@@ -110,13 +122,17 @@ function LoginScreen({ loginForm, setLoginForm, handleLogin, loading, error, rem
   );
 }
 
-function Sidebar({ activeTab, setActiveTab, user, setUser }) {
-  const tabs = [
+function Sidebar({ activeTab, setActiveTab, user, setUser, emailLogCount, onEmailSettings }) {
+  const allTabs = [
     ["dashboard", "dashboard", "Dashboard"],
     ["inventory", "inventory_2", "Inventory"],
     ["orders", "receipt_long", "Order Management"],
     ["audit", "history_edu", "Audit Trail"],
+    ["emaillog", "mark_email_read", "Email Alerts"],
   ];
+
+  // Filter tabs based on user role
+  const tabs = user?.role === "admin" ? allTabs : [["inventory", "inventory_2", "Inventory"]];
 
   return (
     <aside className="sidebar">
@@ -133,11 +149,17 @@ function Sidebar({ activeTab, setActiveTab, user, setUser }) {
           >
             <span className="material-symbols-outlined">{icon}</span>
             <span>{label}</span>
+            {id === "emaillog" && emailLogCount > 0 && <b className="nav-badge">{emailLogCount}</b>}
           </button>
         ))}
       </nav>
       <div className="sidebar-footer">
         <button className="deploy-button">DEPLOY REPORT</button>
+        {user?.role === "admin" && (
+          <button className="nav-item support" onClick={onEmailSettings}>
+            <span className="material-symbols-outlined">settings</span>Email Settings
+          </button>
+        )}
         <button className="nav-item support"><span className="material-symbols-outlined">help</span>Support</button>
         <button className="nav-item support" onClick={() => setUser(null)}>
           <span className="material-symbols-outlined">logout</span>Log Out
@@ -252,31 +274,6 @@ function Dashboard({ items, orders, vendors, onManualOrder, onDeliveryConfirm })
             empty="No critical stock exceptions."
           />
         </section>
-
-        <section className="panel span-4">
-          <div className="map-card">
-            <img alt="" src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=700&h=700&fit=crop" />
-            <div><span className="pulse" />LIVE ASSET TRACKING</div>
-            <footer><span>COORD: 28.61N 77.20E</span><span>SAT-LINK: ACTIVE</span></footer>
-          </div>
-        </section>
-
-        <section className="panel span-12">
-          <div className="panel-head"><h2>LOGISTICS TIMELINE</h2></div>
-          <div className="timeline">
-            {activeOrders.slice(0, 4).map((order) => {
-              const item = items.find((i) => i.id === order.food_item_id);
-              const vendor = vendors.find((v) => v.id === order.vendor_id);
-              return (
-                <div className={`timeline-row ${statusClass(order.status)}`} key={order.id}>
-                  <time>{new Date(order.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
-                  <p>{item?.name || "Unknown asset"} requisition is {order.status.toLowerCase()} via {vendor?.name || "assigned vendor"}.</p>
-                  {(order.status === "Order Placed" || order.status === "In Transit") && <button onClick={() => onDeliveryConfirm(order)}>Confirm Delivery</button>}
-                </div>
-              );
-            })}
-          </div>
-        </section>
       </div>
     </div>
   );
@@ -333,7 +330,6 @@ function Inventory({ items, locations, vendors, user, filters, setFilters, onChe
               </div>
               {user.role !== "vendor" && (
                 <div className="asset-actions">
-                  <button onClick={() => onRestock(item)}>RESTOCK</button>
                   <button onClick={() => onCheckout(item)}>CHECKOUT</button>
                 </div>
               )}
@@ -346,7 +342,7 @@ function Inventory({ items, locations, vendors, user, filters, setFilters, onChe
 }
 
 function Orders({ orders, items, vendors, user, onDeliveryConfirm, onVendorConfirm }) {
-  const visibleOrders = user.role === "vendor" ? orders.filter((o) => o.vendor_id === user.vendor_id) : orders;
+  const visibleOrders = orders;
   const totalVolume = visibleOrders.reduce((sum, o) => sum + Number(o.quantity_requested || 0), 0);
   const transit = visibleOrders.filter((o) => o.status === "In Transit" || o.status === "Order Placed").length;
   const pending = visibleOrders.filter((o) => o.status === "Pending").length;
@@ -423,7 +419,7 @@ function Audit({ audit, logs, items }) {
           <h2><span className="material-symbols-outlined">database</span> Stock Audit Trail Ledger</h2>
           <button className="table-action">EXPORT LEDGER</button>
         </div>
-        <DataTable columns={["Timestamp", "Asset UID", "Action", "Qty", "Operator", "Terminal / Notes"]} rows={rows} empty="No audit entries yet." />
+        <DataTable columns={["Timestamp", "Asset UID", "Action", "Qty", "Operator"]} rows={rows} empty="No audit entries yet." />
       </section>
       <div className="sync-strip">
         <span><i /> DATABASE SYNC: ONLINE</span>
@@ -479,6 +475,16 @@ function App() {
   const [formNotes, setFormNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
+  // Email system state
+  const [emailLog, setEmailLog] = useState([]);
+  const [emailConfig, setEmailConfig] = useState(loadEmailConfig);
+  const [emailSettingsOpen, setEmailSettingsOpen] = useState(false);
+  const [emailConfigDraft, setEmailConfigDraft] = useState(loadEmailConfig);
+  // Auto-reorder scheduler state
+  const [scheduler, setScheduler] = useState(null);
+  const [reorderStats, setReorderStats] = useState({ totalAuto: 0, totalPending: 0 });
+  const [autoReorderEnabled, setAutoReorderEnabled] = useState(true);
+  const [selectedItemForReorder, setSelectedItemForReorder] = useState(null);
   const [newItem, setNewItem] = useState({
     asset_uid: "",
     name: "",
@@ -526,6 +532,57 @@ function App() {
 
   useEffect(() => { refreshData(); }, [refreshData]);
 
+  // Set default tab based on user role
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      setActiveTab("inventory");
+    }
+  }, [user]);
+
+  // Initialize low-stock scheduler for admins
+  useEffect(() => {
+    if (!user || user.role !== "admin" || !autoReorderEnabled) {
+      if (scheduler) {
+        scheduler.stop();
+        setScheduler(null);
+      }
+      return;
+    }
+
+    if (scheduler) return; // Already running
+
+    const newScheduler = createLowStockScheduler(5); // Check every 5 minutes
+
+    const checkFn = async () => {
+      const results = await processLowStockDetection(
+        data.items,
+        data.vendors,
+        user,
+        emailConfig,
+        insertOrder,
+        addAudit,
+        sendAutoReorderEmail
+      );
+
+      const triggered = results.filter((r) => r.success);
+      if (triggered.length > 0) {
+        setReorderStats({
+          totalAuto: data.orders.filter((o) => o.trigger_type === "Auto-Low-Stock").length,
+          totalPending: data.orders.filter((o) => o.status === "Pending").length,
+        });
+        // Refresh data to show new orders
+        refreshData();
+      }
+    };
+
+    newScheduler.start(checkFn);
+    setScheduler(newScheduler);
+
+    return () => {
+      if (newScheduler) newScheduler.stop();
+    };
+  }, [user, autoReorderEnabled, scheduler, data.items, data.vendors, data.orders, emailConfig, refreshData]);
+
   const showToast = (message) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 3500);
@@ -556,10 +613,14 @@ function App() {
     return saved;
   };
 
+  const logEmail = (entry) => {
+    setEmailLog((prev) => [{ ...entry, ts: new Date().toISOString() }, ...prev]);
+  };
+
+  // LOW-STOCK THRESHOLD: 10% of total_capacity
   const checkLowStock = async (item) => {
     const pct = stockPct(item);
-    const threshold = item.priority === "Critical" ? 30 : 20;
-    if (pct > threshold) return;
+    if (pct > 10) return; // Only trigger at or below 10%
     const existing = data.orders.find((o) => o.food_item_id === item.id && ["Pending", "Order Placed", "In Transit"].includes(o.status));
     if (existing) return;
 
@@ -583,6 +644,24 @@ function App() {
       notes: `Auto trigger at ${pct}% stock.`,
       ts: new Date().toISOString(),
     });
+
+    // Send email alert to vendor
+    const vendor = data.vendors.find((v) => v.id === item.vendor_id);
+    if (vendor) {
+      const result = await sendLowStockAlert(item, vendor, order, emailConfig);
+      logEmail({
+        type: "auto",
+        to: vendor.email,
+        subject: `[AEGIS AUTO-ALERT] Low Stock: ${item.name} at ${pct}%`,
+        body: `Stock dropped to ${pct}%. Order REQ-${String(order.id).padStart(4,"0")} for ${order.quantity_requested} ${item.unit} placed automatically.`,
+        item: item.name,
+        vendor: vendor.name,
+        orderId: order.id,
+        status: result.success ? (result.simulated ? "simulated" : "sent") : "failed",
+      });
+      if (result.success && !result.simulated) showToast(`📧 Email alert sent to ${vendor.name}`);
+      else if (result.simulated) showToast(`📧 Email simulated (configure EmailJS to send real emails)`);
+    }
   };
 
   const handleCheckout = async () => {
@@ -711,7 +790,29 @@ function App() {
         notes: "Manual requisition generated.",
         ts: new Date().toISOString(),
       });
-      showToast("Manual requisition created.");
+
+      // Send manual order email to vendor
+      const vendor = data.vendors.find((v) => v.id === item.vendor_id);
+      if (vendor) {
+        const result = await sendManualOrderEmail(item, vendor, order, user, emailConfig);
+        const pct = stockPct(item);
+        logEmail({
+          type: "manual",
+          to: vendor.email,
+          subject: `[AEGIS ORDER] Manual Requisition: ${item.name} — REQ-${String(order.id).padStart(4,"0")}`,
+          body: `Manual order placed by ${user.name}. Stock at ${pct}%. Requesting ${order.quantity_requested} ${item.unit}.`,
+          item: item.name,
+          vendor: vendor.name,
+          orderId: order.id,
+          status: result.success ? (result.simulated ? "simulated" : "sent") : "failed",
+        });
+        showToast(result.success && !result.simulated
+          ? `📧 Order email sent to ${vendor.name}`
+          : "Manual requisition created. (Email simulated)"
+        );
+      } else {
+        showToast("Manual requisition created.");
+      }
     } catch (error) {
       showToast(error.message || "Order failed.");
     } finally {
@@ -779,7 +880,7 @@ function App() {
   const filteredItems = useMemo(() => {
     const text = search.trim().toLowerCase();
     return data.items.filter((item) => {
-      if (user?.role === "officer" && item.location_id !== user.location_id) return false;
+      // Removed officer location filter to show all inventory items across all locations
       if (filters.category !== "All" && item.category !== filters.category) return false;
       if (filters.branch !== "All" && item.branch !== filters.branch) return false;
       if (filters.priority !== "All" && item.priority !== filters.priority) return false;
@@ -795,9 +896,23 @@ function App() {
     return <LoginScreen loginForm={loginForm} setLoginForm={setLoginForm} handleLogin={handleLogin} loading={loading} error={loadError} rememberMe={rememberMe} setRememberMe={setRememberMe} availableUsers={data.users} />;
   }
 
+  const handleSaveEmailConfig = () => {
+    saveEmailConfig(emailConfigDraft);
+    setEmailConfig(emailConfigDraft);
+    setEmailSettingsOpen(false);
+    showToast("Email settings saved.");
+  };
+
   return (
     <div className="app-shell">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user} setUser={setUser} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user}
+        setUser={setUser}
+        emailLogCount={emailLog.length}
+        onEmailSettings={() => { setEmailConfigDraft(emailConfig); setEmailSettingsOpen(true); }}
+      />
       <main className="main-shell">
         <Topbar search={search} setSearch={setSearch} user={user} lowCount={lowCount} />
         <section className="content">
@@ -807,6 +922,7 @@ function App() {
           {activeTab === "inventory" && <Inventory items={filteredItems} locations={data.locations} vendors={data.vendors} user={user} filters={filters} setFilters={setFilters} onCheckout={setCheckoutItem} onRestock={setRestockItem} onAddItem={() => setAddItemOpen(true)} />}
           {activeTab === "orders" && <Orders orders={data.orders} items={data.items} vendors={data.vendors} user={user} onDeliveryConfirm={handleDeliveryConfirm} onVendorConfirm={handleVendorConfirm} />}
           {activeTab === "audit" && <Audit audit={data.audit} logs={data.logs} items={data.items} />}
+          {activeTab === "emaillog" && <EmailLog emails={emailLog} emailConfig={emailConfig} onSettings={() => { setEmailConfigDraft(emailConfig); setEmailSettingsOpen(true); }} />}
         </section>
       </main>
 
@@ -814,8 +930,6 @@ function App() {
         <Modal title={`${checkoutItem ? "Checkout" : "Restock"}: ${(checkoutItem || restockItem).name}`} onClose={() => { setCheckoutItem(null); setRestockItem(null); }}>
           <label className="field-label">QUANTITY</label>
           <input className="field" type="number" value={formQty} onChange={(e) => setFormQty(e.target.value)} />
-          <label className="field-label">TERMINAL / NOTES</label>
-          <textarea className="field textarea" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} />
           <button className="primary-action" disabled={busy} onClick={checkoutItem ? handleCheckout : handleRestock}>{busy ? "SAVING" : "CONFIRM TRANSACTION"}</button>
         </Modal>
       )}
@@ -848,7 +962,100 @@ function App() {
         </Modal>
       )}
 
+      {/* EmailJS Settings Modal */}
+      {emailSettingsOpen && (
+        <Modal title="Email Settings — EmailJS Configuration" onClose={() => setEmailSettingsOpen(false)}>
+          <div className="email-settings-info">
+            <span className="material-symbols-outlined">info</span>
+            <p>Sign up free at <a href="https://www.emailjs.com" target="_blank" rel="noreferrer">emailjs.com</a>, create an email service &amp; template, then paste your credentials below. Without configuration, emails are simulated locally.</p>
+          </div>
+          <label className="field-label">SERVICE ID</label>
+          <input className="field" placeholder="e.g. service_abc123" value={emailConfigDraft.serviceId} onChange={(e) => setEmailConfigDraft((p) => ({ ...p, serviceId: e.target.value }))} />
+          <label className="field-label">TEMPLATE ID</label>
+          <input className="field" placeholder="e.g. template_xyz789" value={emailConfigDraft.templateId} onChange={(e) => setEmailConfigDraft((p) => ({ ...p, templateId: e.target.value }))} />
+          <label className="field-label">PUBLIC KEY</label>
+          <input className="field" placeholder="e.g. ABCdef123..." value={emailConfigDraft.publicKey} onChange={(e) => setEmailConfigDraft((p) => ({ ...p, publicKey: e.target.value }))} />
+          <div className="email-template-hint">
+            <strong>Required template variables:</strong>
+            <code>{"{{to_email}}, {{vendor_name}}, {{item_name}}, {{stock_pct}}, {{quantity_requested}}, {{unit}}, {{branch}}, {{priority}}, {{order_id}}, {{order_date}}, {{system_name}}"}</code>
+          </div>
+          <button className="primary-action" onClick={handleSaveEmailConfig}>SAVE CONFIGURATION</button>
+        </Modal>
+      )}
+
       {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+// Email Log View
+function EmailLog({ emails, emailConfig, onSettings }) {
+  const isConfigured = emailConfig?.serviceId && emailConfig?.templateId && emailConfig?.publicKey;
+  return (
+    <div className="page-stack">
+      <div className="page-heading">
+        <div>
+          <h2>Email Alert Log</h2>
+          <p>All vendor email notifications triggered by low stock (&le;10%) or manual orders are recorded here.</p>
+        </div>
+        <div className="telemetry-pair">
+          <div className={`metric ${isConfigured ? "ok" : "warn"}`}>
+            <div><span>Email Mode</span><span className="material-symbols-outlined">mail</span></div>
+            <strong>{isConfigured ? "LIVE" : "SIMULATED"}</strong>
+            <p>{isConfigured ? "EMAILJS ACTIVE" : "CONFIG REQUIRED"}</p>
+          </div>
+          <div className="metric">
+            <div><span>Emails Sent</span><span className="material-symbols-outlined">mark_email_read</span></div>
+            <strong>{emails.length}</strong>
+            <p>TOTAL ALERTS</p>
+          </div>
+        </div>
+      </div>
+
+      {!isConfigured && (
+        <div className="inline-alert warn email-config-banner">
+          <span className="material-symbols-outlined">warning</span>
+          <div>
+            <strong>EmailJS not configured — emails are being simulated.</strong>
+            <p>Click <button className="link-btn" onClick={onSettings}>Email Settings</button> to enter your EmailJS credentials and enable real email delivery to vendors.</p>
+          </div>
+        </div>
+      )}
+
+      <section className="panel no-pad">
+        <div className="table-title">
+          <h2><span className="material-symbols-outlined">mark_email_read</span> Vendor Email Notifications</h2>
+          <span className={`status-chip ${isConfigured ? "ok" : "warn"}`}>{isConfigured ? "EMAILJS LIVE" : "SIMULATED MODE"}</span>
+        </div>
+        {emails.length === 0 ? (
+          <div className="empty-email-log">
+            <span className="material-symbols-outlined">mail_outline</span>
+            <p>No email alerts yet. Emails are automatically sent when stock drops below 10% or a manual order is placed.</p>
+          </div>
+        ) : (
+          <div className="email-log-list">
+            {emails.map((e, i) => (
+              <div key={i} className={`email-log-entry ${e.status}`}>
+                <div className="email-log-header">
+                  <span className={`status-chip ${e.status === "sent" ? "ok" : e.status === "simulated" ? "info" : "danger"}`}>
+                    {e.status === "sent" ? "✓ SENT" : e.status === "simulated" ? "◎ SIMULATED" : "✗ FAILED"}
+                  </span>
+                  <span className={`email-type-badge ${e.type}`}>{e.type === "auto" ? "AUTO-ALERT" : "MANUAL ORDER"}</span>
+                  <span className="mono muted-text">{new Date(e.ts).toLocaleString()}</span>
+                </div>
+                <div className="email-log-subject">{e.subject}</div>
+                <div className="email-log-meta">
+                  <span><span className="material-symbols-outlined" style={{fontSize:14}}>person</span> {e.vendor}</span>
+                  <span><span className="material-symbols-outlined" style={{fontSize:14}}>mail</span> {e.to}</span>
+                  <span><span className="material-symbols-outlined" style={{fontSize:14}}>inventory_2</span> {e.item}</span>
+                  <span className="mono primary-text">REQ-{String(e.orderId).padStart(4,"0")}</span>
+                </div>
+                <div className="email-log-body">{e.body}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
